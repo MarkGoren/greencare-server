@@ -26,7 +26,7 @@ export class Users {
   @Prop([Number])
   gatheringIds: number[];
 
-  @Prop()
+  @Prop({ default: process.env.DEFAULT_PROFILE_IMAGE })
   profileImg: string;
 
   @Prop({ default: 'user', immutable: true })

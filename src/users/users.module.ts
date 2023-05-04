@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AdminsModule } from 'src/admins/admins.module';
 import { AdminsService } from 'src/admins/admins.service';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { LocalStrategy } from 'src/auth/local.strategy';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CryptoModule } from 'src/crypto/crypto.module';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { Admins, AdminsSchema } from 'src/schemas/admins.schema';
 import { Users, UsersSchema } from 'src/schemas/users.schema';
@@ -21,15 +24,17 @@ import { UsersService } from './users.service';
     ]),
     AdminsModule,
     SendgridModule,
+    JwtModule,
+    CloudinaryModule,
+    CryptoModule,
   ],
   providers: [
     UsersService,
     LocalStrategy,
-    JwtService,
     JwtStrategy,
     AuthService,
     AdminsService,
-    CryptoService,
+    AuthService,
   ],
   controllers: [UsersController],
   exports: [UsersService],

@@ -10,7 +10,10 @@ import {
   Req,
   Res,
   Session,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from 'src/auth/auth.service';
 import { LocalStrategy } from 'src/auth/local.strategy';
 import { SendgridService } from 'src/sendgrid/sendgrid.service';
@@ -129,5 +132,29 @@ export class UsersController {
           HttpStatus.EXPECTATION_FAILED,
         );
       });
+  }
+
+  @Get('test')
+  async test(@Req() req) {
+    const userInfo = await this.authService.decodeToken(req);
+    this.usersService
+      .getUserNameAndProfileById(userInfo.userId)
+      .then(console.log);
+  }
+
+  @Post('updateProfile')
+  @UseInterceptors(FileInterceptor('image'))
+  async updateProfile(
+    @Body() data,
+    @Req() req,
+    @Res() res,
+    @UploadedFile() profileImg: Express.Multer.File,
+  ) {
+    const userInfo = await this.authService.decodeToken(req);
+    this.usersService.updateProfileImg(profileImg, userInfo).then(() => {
+      return res
+        .status(HttpStatus.OK)
+        .json('profile image was changed successfully!');
+    });
   }
 }

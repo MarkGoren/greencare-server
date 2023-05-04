@@ -1,7 +1,5 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { BSONTypeAlias } from 'mongodb';
 import { Date, HydratedDocument } from 'mongoose';
-import { isDate } from 'util/types';
 
 export type GatheringsDocument = HydratedDocument<Gatherings>;
 
@@ -10,27 +8,35 @@ export class Gatherings {
   @Prop({ required: true })
   imgsBefore: string[];
 
-  @Prop([String])
+  @Prop({ default: [] })
   imgsAfter: string[];
 
-  @Prop([{ String, Boolean }])
-  usersIds: { id: string; locationApproved: boolean }[];
+  @Prop({ default: [] })
+  usersIds: string[];
 
-  @Prop()
+  @Prop({ default: [] })
+  users: {
+    hashedId: string;
+    fullName: string;
+    profileImg: string;
+    isLocApproved: boolean;
+  }[];
+
+  @Prop({ default: '' })
   info: string;
 
   @Prop({ type: Object })
-  location: { lat: number; lng: number };
+  loc: { lat: number; lng: number };
 
   @Prop()
   locName: string;
 
   @Prop()
-  time: number;
+  time: string;
 
   @Prop({ default: '' })
   status: string;
-  // status: pending, denied/approved
+  // status: location found/ gathering initiated, pending approval, denied/approved
 }
 
 export const GatheringsSchema = SchemaFactory.createForClass(Gatherings);
