@@ -12,14 +12,16 @@ export class Gatherings {
   imgsAfter: string[];
 
   @Prop({ default: [] })
-  usersIds: string[];
+  usersIds: {
+    id: string;
+    isLocApproved: boolean;
+  }[];
 
   @Prop({ default: [] })
   users: {
-    hashedId: string;
+    //hashedId: string;
     fullName: string;
     profileImg: string;
-    isLocApproved: boolean;
   }[];
 
   @Prop({ default: '' })
@@ -32,7 +34,10 @@ export class Gatherings {
   locName: string;
 
   @Prop()
-  time: string;
+  time: number;
+
+  @Prop()
+  capacity: number;
 
   @Prop({ default: '' })
   status: string;

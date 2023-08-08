@@ -6,10 +6,8 @@ import {
   HttpStatus,
   Param,
   Post,
-  Put,
   Req,
   Res,
-  Session,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -55,6 +53,8 @@ export class UsersController {
       const userInfoForSession = {
         fullName: userInfo.fullName,
         profileImg: userInfo.profileImg,
+        coins: userInfo.coins,
+        xp: userInfo.xp,
         role: userInfo.role,
       };
 
@@ -134,27 +134,15 @@ export class UsersController {
       });
   }
 
-  @Get('test')
-  async test(@Req() req) {
+  @Post('updateProfile')
+  async updateProfile(@Body() data, @Req() req, @Res() res) {
     const userInfo = await this.authService.decodeToken(req);
     this.usersService
-      .getUserNameAndProfileById(userInfo.userId)
-      .then(console.log);
-  }
-
-  @Post('updateProfile')
-  @UseInterceptors(FileInterceptor('image'))
-  async updateProfile(
-    @Body() data,
-    @Req() req,
-    @Res() res,
-    @UploadedFile() profileImg: Express.Multer.File,
-  ) {
-    const userInfo = await this.authService.decodeToken(req);
-    this.usersService.updateProfileImg(profileImg, userInfo).then(() => {
-      return res
-        .status(HttpStatus.OK)
-        .json('profile image was changed successfully!');
-    });
+      .updateProfileImg(data.newProfileImg, userInfo)
+      .then(() => {
+        return res
+          .status(HttpStatus.OK)
+          .json('profile image was changed successfully!');
+      });
   }
 }

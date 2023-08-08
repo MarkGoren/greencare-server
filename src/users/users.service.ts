@@ -96,15 +96,41 @@ export class UsersService {
     return result;
   }
 
-  async updateProfileImg(profileImg, userInfo) {
-    const uploadedImageUrl = this.cloudinaryService.uploadImages(
-      profileImg,
-      'greencare_profile_images',
-    );
+  async updateProfileImg(newProfileImg, userInfo) {
     const result = await this.usersModel.findByIdAndUpdate(userInfo.userId, {
-      profileImg: uploadedImageUrl[0],
+      profileImg: newProfileImg,
     });
 
     return result;
+  }
+
+  async addActionToApprovedUsers(
+    action: { name: string; action: string; img: string; time: Date },
+    users: { id: string; isLocApproved: boolean }[],
+  ) {
+    const approvedUsers = users.map(async (user) => {
+      if (!user.isLocApproved) return;
+      const approvedUser = await this.findUserById(user.id);
+      approvedUser.actions.push(action);
+      return approvedUser.save();
+    });
+    return Promise.all(approvedUsers);
+  }
+
+  async giveCoins(userId, index) {
+    const resultUser = await this.usersModel.findById(userId);
+    if (!resultUser)
+      throw new HttpException('user not found!', HttpStatus.BAD_REQUEST);
+
+    if (index != 0) {
+      resultUser.coins += 5;
+      resultUser.xp += 50;
+    } else {
+      resultUser.coins += 10;
+      resultUser.xp += 100;
+    }
+
+    const updatedUser = await resultUser.save();
+    return updatedUser;
   }
 }

@@ -8,13 +8,10 @@ import {
   Post,
   Req,
   Res,
-  UploadedFile,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import multer, { Multer } from 'multer';
-import { Readable } from 'stream';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { GatheringsService } from './gatherings.service';
 
 @Controller('gatherings')
@@ -33,20 +30,13 @@ export class GatheringsController {
   }
 
   @Post('createNew')
-  @UseInterceptors(FilesInterceptor('image', 3))
-  async addLocationOrGathering(
-    @Body() data,
-    @Req() req,
-    @Res() res,
-    @UploadedFiles() images: Array<Express.Multer.File>,
-  ) {
+  async addLocationOrGathering(@Body() data, @Req() req, @Res() res) {
     const result = await this.gatheringsService.addLocationOrGathering(
       req,
       data,
-      images,
     );
 
-    if (result.users.length)
+    if (result[0].users.length)
       return res.status(HttpStatus.OK).json('gathering created successfully!');
     return res.status(HttpStatus.OK).json('location added successfully!');
   }
@@ -55,8 +45,11 @@ export class GatheringsController {
   async addUserToGathering(@Body() data, @Req() req, @Res() res) {
     const result = await this.gatheringsService.addUserToGathering(req, data);
 
-    if (!result)
-      throw new HttpException('something went wrong!', HttpStatus.BAD_REQUEST);
+    if (!result[0])
+      throw new HttpException(
+        'something went wrong!',
+        HttpStatus.EXPECTATION_FAILED,
+      );
     return res
       .status(HttpStatus.OK)
       .json('user added to gathering successfully!');
@@ -88,7 +81,7 @@ export class GatheringsController {
 
   @Post('approveUserLocation')
   async approveUserLocation(@Body() data, @Req() req, @Res() res) {
-    const result = this.gatheringsService.approveUserLocation(
+    const result = await this.gatheringsService.approveUserLocation(
       req,
       data.gatheringId,
     );
@@ -102,18 +95,8 @@ export class GatheringsController {
   }
 
   @Post('closeGathering')
-  @UseInterceptors(FilesInterceptor('image', 3))
-  async closeGathering(
-    @Body() data,
-    @Req() req,
-    @Res() res,
-    @UploadedFiles() images: Array<Express.Multer.File>,
-  ) {
-    const result = await this.gatheringsService.closeGathering(
-      data,
-      req,
-      images,
-    );
+  async closeGathering(@Body() data, @Req() req, @Res() res) {
+    const result = await this.gatheringsService.closeGathering(data, req);
     if (!result)
       throw new HttpException(
         'something went wrong...',

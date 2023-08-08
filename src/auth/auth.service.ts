@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { AdminsService } from 'src/admins/admins.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -30,7 +30,10 @@ export class AuthService {
   }
 
   async decodeToken(req: Request) {
-    const access_token = req.cookies.jwtToken.access_token;
+    const access_token =
+      typeof req.cookies.jwtToken === 'string'
+        ? JSON.parse(req.cookies.jwtToken).access_token
+        : req.cookies.jwtToken.access_token;
     const payload = this.jwtService.decode(access_token);
     const result = this.jwtStrategy.validate(payload);
     return result;
@@ -49,13 +52,14 @@ export class AuthService {
       );
     }
 
+    if (!userInfoByEmail[0]) return false;
+
     const isValidPassword = await bcrypt.compare(
       loginInfo.password,
       userInfoByEmail[0].passwordHash,
     );
 
     if (
-      !userInfoByEmail[0] ||
       (userInfoByEmail[0].role === 'user' &&
         !userInfoByEmail[0].emailApproved) ||
       !isValidPassword

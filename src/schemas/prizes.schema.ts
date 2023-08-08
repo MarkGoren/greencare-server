@@ -5,11 +5,14 @@ export type PrizesDocument = HydratedDocument<Prizes>;
 
 @Schema()
 export class Prizes {
+  @Prop()
+  hashedId: string;
+
   @Prop({ required: true })
   storeName: string;
 
   @Prop({ required: true })
-  discountName: string;
+  prizeDesc: string;
 
   @Prop({ required: true })
   img: string;
@@ -19,6 +22,9 @@ export class Prizes {
 
   @Prop({ required: true })
   cost: number;
+
+  @Prop({ required: true })
+  codes: string[];
 }
 
 export const PrizesSchema = SchemaFactory.createForClass(Prizes);

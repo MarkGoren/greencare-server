@@ -6,6 +6,7 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(
+    cookieParser(),
     session({
       secret: process.env.SESSION_SECRET,
       resave: false,
@@ -14,7 +15,6 @@ async function bootstrap() {
         maxAge: 60000,
       },
     }),
-    cookieParser(),
   );
   await app.listen(3000);
 }

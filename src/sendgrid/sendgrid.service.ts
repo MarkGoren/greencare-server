@@ -1,15 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import * as SendGrid from '@sendgrid/mail';
 import { CryptoService } from 'src/crypto/crypto.service';
-import { UsersDocument } from 'src/schemas/users.schema';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class SendgridService {
-  constructor(
-    private readonly userService: UsersService,
-    private readonly cryptoService: CryptoService,
-  ) {
+  constructor(private readonly cryptoService: CryptoService) {
     SendGrid.setApiKey(process.env.SENDGRID_KEY);
   }
 
@@ -42,6 +37,21 @@ export class SendgridService {
       templateId: process.env.RESET_PASSWORD_EMAIL_TEMPLATE_ID,
       dynamicTemplateData: {
         link: `http://${process.env.SERVER_DOMAIN}/users/changePassword/${encryptedUserId}`,
+      },
+    };
+    return SendGrid.send(mail);
+  }
+
+  async sendPruchasedPrizeEmail(userInfo, prizeData, code) {
+    const mail = {
+      from: 'gormark2001@gmail.com',
+      to: userInfo.email,
+      cc: '',
+      templateId: process.env.RESET_PASSWORD_EMAIL_TEMPLATE_ID,
+      dynamicTemplateData: {
+        src: prizeData.img,
+        prizeDesc: prizeData.prizeDesc,
+        code: code,
       },
     };
     return SendGrid.send(mail);
