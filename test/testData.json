@@ -1,0 +1,16 @@
+{
+  "user1Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwic3ViIjoiNjRiYmRlMTEzM2UwYWI4MGNiMTdiZTMzIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2OTAyODkyNDl9.lJlo-vqziRRe9544ltlQ7cPTnG-psG26CxU4VKGYTDQ",
+  "user2Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3QyQGdtYWlsLmNvbSIsInN1YiI6IjY0YmU1ZDJlMzNlMGFiODBjYjE3YmUzNiIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNjkwMjg5MzY4fQ.51v3s8IsPQprmDg7wLCUkXKilEnL3unVL_EF-FpXI6c",
+  "user3Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3QzQGdtYWlsLmNvbSIsInN1YiI6IjY0YmU1ZDM3MzNlMGFiODBjYjE3YmUzOSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNjkwMjg5MzkwfQ.l_g0w2Mqg0g0etPJK5nDlXcDSHk6LzyDkyjzE9X03O8",
+  "adminToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluZ3JlZW5jYXJlQGdtYWlsLmNvbSIsInN1YiI6IjY0YzhlZTBlMTA0YzBkZmJhZGI3YTI4NCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTY5MTQwODc0MX0.Ce8LGoa-Jwy23dIxh4Qxy8lsP7GYwh7qblWV9ZRHlU0",
+  "testLocationData": {
+    "imgsBefore": ["test1", "test2", "test3"],
+    "info": "test",
+    "location": "test",
+    "locName": "test"
+  },
+  "dateForGathering": {
+    "date": 1721050406508
+  },
+  "hashedPrizeId": "$2a$10$Of6LNtIJJJ6j3/VhWj74Kem3a1GHqtNahENCF7B/K6KakkbCnW1bi"
+}

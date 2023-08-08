@@ -26,6 +26,9 @@ export class Users {
   @Prop([Number])
   gatheringIds: number[];
 
+  @Prop()
+  actions: object[];
+
   @Prop({ default: process.env.DEFAULT_PROFILE_IMAGE })
   profileImg: string;
 

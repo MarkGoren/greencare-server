@@ -4,8 +4,6 @@ import { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { Gatherings, GatheringsDocument } from 'src/schemas/gatherings.schema';
 import { UsersService } from 'src/users/users.service';
-import * as bcrypt from 'bcrypt';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class GatheringsService {
@@ -14,48 +12,56 @@ export class GatheringsService {
     private readonly gatheringsModel: Model<GatheringsDocument>,
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
-    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async addLocationOrGathering(req, data, images) {
+  async addLocationOrGathering(req, data) {
     const userInfo = await this.authService.decodeToken(req);
 
-    const uploadedImgsUrls = await this.cloudinaryService.uploadImages(
-      images,
-      'greencare_locations',
-    );
+    if (data.time && new Date(data.time) <= new Date())
+      throw new HttpException('invalid date provided!', HttpStatus.BAD_REQUEST);
 
-    if ('time' in data) {
-      const userNameAndProfile =
-        await this.usersService.getUserNameAndProfileById(userInfo.userId);
-      const hashedUserId = await bcrypt.hash(userInfo.userId, 10);
+    const user = await this.usersService.findUserById(userInfo.userId);
+
+    const action = {
+      name: data.locName,
+      action: '',
+      img: data.imgsBefore[0],
+      time: new Date(),
+    };
+
+    if (data.time) {
+      // const hashedUserId = await bcrypt.hash(userInfo.userId, 10);
       const createdGathering = new this.gatheringsModel({
-        imgsBefore: uploadedImgsUrls,
-        usersIds: [userInfo.userId],
+        imgsBefore: data.images,
+        usersIds: [{ id: userInfo.userId, isLocApproved: false }],
         users: [
           {
-            hashedId: hashedUserId,
-            fullName: userNameAndProfile.fullName,
-            profileImg: userNameAndProfile.profileImg,
-            locationApproved: false,
+            // hashedId: hashedUserId,
+            fullName: user.fullName,
+            profileImg: user.profileImg,
           },
         ],
         info: data.info,
         location: data.location,
         locName: data.locName,
         time: data.time,
+        capacity: data?.capacity ?? 8,
         status: 'gathering initiated',
       });
-      return createdGathering.save();
+      action.action = 'you have initiated a gathering';
+      user.actions.push(action);
+      return Promise.all([createdGathering.save(), user.save()]);
     } else {
       const createdLocation = new this.gatheringsModel({
-        imgsBefore: uploadedImgsUrls,
+        imgsBefore: data.imgsBefore,
         info: data.info,
         location: data.location,
         locName: data.locName,
         status: 'location found',
       });
-      return createdLocation.save();
+      action.action = 'you have reported a location';
+      user.actions.push(action);
+      return Promise.all([createdLocation.save(), user.save()]);
     }
   }
 
@@ -102,7 +108,6 @@ export class GatheringsService {
   }
 
   async addUserToGathering(req, data) {
-    console.log(new Date(data.time) <= new Date());
     const userInfo = await this.authService.decodeToken(req);
     const resultGathering = await this.gatheringsModel.findById(
       data.gatheringId,
@@ -111,8 +116,18 @@ export class GatheringsService {
     if (!resultGathering)
       throw new HttpException('gathering not found!', HttpStatus.BAD_REQUEST);
 
-    resultGathering.usersIds.forEach((userId) => {
-      if (userId === userInfo.userId) {
+    const date = new Date();
+    if (
+      resultGathering?.users.length === 0 &&
+      (!data?.time || date.setTime(data.time) <= date.getDate())
+    )
+      throw new HttpException(
+        'valid date must be provided in gathering init',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    resultGathering.usersIds.forEach((obj) => {
+      if (obj.id === userInfo.userId) {
         throw new HttpException(
           'user already attending gathering!',
           HttpStatus.CONFLICT,
@@ -120,35 +135,37 @@ export class GatheringsService {
       }
     });
 
-    if (resultGathering?.users.length === 0 && !data?.time)
-      throw new HttpException(
-        'time must be provided in gathering init',
-        HttpStatus.BAD_REQUEST,
-      );
+    const user = await this.usersService.findUserById(userInfo.userId);
+    //const hashedUserId = await bcrypt.hash(userInfo.userId, 10);
 
-    if (new Date(data.time) <= new Date())
-      throw new HttpException('invalid date!', HttpStatus.BAD_REQUEST);
-
-    const userNameAndProfile =
-      await this.usersService.getUserNameAndProfileById(userInfo.userId);
-    const hashedUserId = await bcrypt.hash(userInfo.userId, 10);
+    const action = {
+      name: resultGathering.locName,
+      action: '',
+      img: resultGathering.imgsBefore[0],
+      time: new Date(),
+    };
 
     resultGathering.users.push({
-      hashedId: hashedUserId,
-      fullName: userNameAndProfile.fullName,
-      profileImg: userNameAndProfile.profileImg,
-      isLocApproved: false,
+      //hashedId: hashedUserId,
+      fullName: user.fullName,
+      profileImg: user.profileImg,
     });
 
-    resultGathering.usersIds.push(userInfo.userId);
+    resultGathering.usersIds.push({
+      id: userInfo.userId,
+      isLocApproved: false,
+    });
 
     if (resultGathering.users.length === 1) {
       resultGathering.time = data.time;
       resultGathering.status = 'gathering initiated';
+      action.action = 'you have initiated a gathering';
+    } else {
+      action.action = 'you joined a gathering';
     }
 
-    const updatedGathering = resultGathering.save();
-    return updatedGathering;
+    user.actions.push(action);
+    return Promise.all([resultGathering.save(), user.save()]);
   }
 
   async removeUserFromGathering(req, gatheringId) {
@@ -158,18 +175,22 @@ export class GatheringsService {
     if (!resultGathering)
       throw new HttpException('gathering not found!', HttpStatus.BAD_REQUEST);
 
+    const user = await this.usersService.findUserById(userInfo.userId);
+    const action = {
+      name: resultGathering.locName,
+      action: 'you have left this gathering',
+      img: resultGathering.imgsBefore[0],
+      time: new Date(),
+    };
+
     const userIdIndex = resultGathering.usersIds.findIndex(
-      (userId) => userId === userInfo.userId,
+      (obj) => obj.id === userInfo.userId,
     );
 
     if (userIdIndex === -1)
       throw new HttpException('user not in gathering!', HttpStatus.CONFLICT);
 
-    const userIndex = resultGathering.users.findIndex(async (user) => {
-      await bcrypt.compare(userInfo.userId, user.hashedId);
-    });
-
-    resultGathering.users.splice(userIndex, 1);
+    resultGathering.users.splice(userIdIndex, 1);
     resultGathering.usersIds.splice(userIdIndex, 1);
 
     if (resultGathering.users.length === 0) {
@@ -177,8 +198,24 @@ export class GatheringsService {
       resultGathering.time = null;
     }
 
-    const updatedGathering = await resultGathering.save();
-    return updatedGathering;
+    const newHost = resultGathering.usersIds[0].id
+      ? await this.usersService.findUserById(resultGathering.usersIds[0].id)
+      : null;
+    const newHostAction = newHost
+      ? {
+          name: resultGathering.locName,
+          action: 'you are now the host of this gathering',
+          img: resultGathering.imgsBefore[0],
+          time: new Date(),
+        }
+      : null;
+
+    user.actions.push(action);
+    if (newHostAction) {
+      newHost.actions.push(newHostAction);
+      return Promise.all([resultGathering.save(), user.save(), newHost.save()]);
+    }
+    return Promise.all([resultGathering.save(), user.save()]);
   }
 
   async checkUserGatheringRole(
@@ -191,24 +228,24 @@ export class GatheringsService {
     if (!resultGathering)
       throw new HttpException('gathering not found!', HttpStatus.BAD_REQUEST);
 
-    const userIndex = resultGathering.users.findIndex(
-      async (obj) => await bcrypt.compare(userInfo.userId, obj.hashedId),
-    );
+    const userIdIndex = resultGathering.usersIds.findIndex((obj) => {
+      return obj.id === userInfo.userId;
+    });
 
     switch (true) {
-      case userIndex === 0:
+      case userIdIndex === 0:
         return 'host';
-      case userIndex >= 1:
+      case userIdIndex >= 1:
         return 'attendee';
-      case userIndex === -1:
+      case userIdIndex === -1:
         return 'viewer';
     }
   }
 
-  async closeGathering(data, req, images) {
-    if (!images)
+  async closeGathering(data, req) {
+    if (!data.imgsAfter || !data.imgsAfter.length)
       throw new HttpException(
-        'no images were provided!',
+        'images were not provided!',
         HttpStatus.BAD_REQUEST,
       );
 
@@ -228,12 +265,24 @@ export class GatheringsService {
         HttpStatus.BAD_REQUEST,
       );
 
-    const uploadedImagesUrls = await this.cloudinaryService.uploadImages(
-      images,
-      'greencare_cleaned_locations',
-    );
-    resultGathering.imgsAfter = uploadedImagesUrls;
+    resultGathering.imgsAfter = data.imgsAfter;
     resultGathering.status = 'pending approval';
+
+    const action = {
+      name: resultGathering.locName,
+      action: 'gathering has been closed',
+      img: resultGathering.imgsBefore[0],
+      time: new Date(),
+    };
+    const updatedUsers = await this.usersService.addActionToApprovedUsers(
+      action,
+      resultGathering.usersIds,
+    );
+    if (!updatedUsers)
+      throw new HttpException(
+        'something went wrong!',
+        HttpStatus.EXPECTATION_FAILED,
+      );
     const updatedGathering = resultGathering.save();
     return updatedGathering;
   }
@@ -245,20 +294,22 @@ export class GatheringsService {
     if (!resultGathering)
       throw new HttpException('gathering not found!', HttpStatus.BAD_REQUEST);
 
-    const userIndex = resultGathering.users.findIndex(
-      async (obj) => await bcrypt.compare(userInfo.userId, obj.hashedId),
-    );
+    const userIndex = resultGathering.usersIds.findIndex((obj) => {
+      return obj.id === userInfo.userId;
+    });
 
     if (userIndex === -1)
       throw new HttpException('user not in gathering!', HttpStatus.CONFLICT);
 
-    resultGathering.users[userIndex].isLocApproved = true;
+    resultGathering.usersIds[userIndex].isLocApproved = true;
+    resultGathering.markModified('usersIds');
     const updatedGathering = await resultGathering.save();
     return updatedGathering;
   }
 
   async updateGatheringStatus(req, data, newStatus: 'approved' | 'denied') {
     const userInfo = await this.authService.decodeToken(req);
+    const promises = [];
     if (userInfo.role !== 'admin')
       throw new HttpException(
         'unauthorized, access denied!',
@@ -272,7 +323,20 @@ export class GatheringsService {
     if (resultGathering.status === newStatus)
       throw new HttpException('no status update needed!', HttpStatus.CONFLICT);
     resultGathering.status = newStatus;
-    const updatedGathering = await resultGathering.save();
-    return updatedGathering;
+
+    if (newStatus === 'approved') {
+      resultGathering.usersIds.forEach((obj, index) => {
+        if (obj.isLocApproved)
+          promises.push(
+            new Promise((res, rej) => {
+              res(this.usersService.giveCoins(obj.id, index));
+            }),
+          );
+      });
+    }
+    return Promise.all(promises).then(async () => {
+      const updatedGathering = await resultGathering.save();
+      return updatedGathering;
+    });
   }
 }
