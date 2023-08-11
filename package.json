@@ -93,5 +93,8 @@
     "setupFilesAfterEnv": [
       "dotenv/config"
     ]
+  },
+  "engines": {
+    "node": ">15"
   }
 }
