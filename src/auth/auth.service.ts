@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { AdminsService } from 'src/admins/admins.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -54,18 +54,22 @@ export class AuthService {
 
     if (!userInfoByEmail[0]) return false;
 
+    if (
+      userInfoByEmail[0].role === 'user' &&
+      !userInfoByEmail[0].emailApproved
+    ) {
+      throw new HttpException(
+        'email has not been approved!',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const isValidPassword = await bcrypt.compare(
       loginInfo.password,
       userInfoByEmail[0].passwordHash,
     );
 
-    if (
-      (userInfoByEmail[0].role === 'user' &&
-        !userInfoByEmail[0].emailApproved) ||
-      !isValidPassword
-    ) {
-      return false;
-    }
+    if (!isValidPassword) return false;
 
     return userInfoByEmail[0];
   }

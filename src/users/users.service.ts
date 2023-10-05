@@ -59,6 +59,8 @@ export class UsersService {
       email: userInfo.email,
       passwordHash: hashedPassword,
       fullName: userInfo.fullName,
+      profileImg:
+        'https://res.cloudinary.com/dq0hets6b/image/upload/v1681490746/greencare_profile_images/profile_icon_sgi7f0.jpg',
     });
     return createdUser.save();
   }
