@@ -50,7 +50,7 @@ export class UsersController {
 
     if (userInfo) {
       const jwtToken = await this.authService.createToken(userInfo);
-      const userInfoForSession = {
+      const userInfoForFront = {
         fullName: userInfo.fullName,
         profileImg: userInfo.profileImg,
         coins: userInfo.coins,
@@ -58,15 +58,9 @@ export class UsersController {
         role: userInfo.role,
       };
 
-      req.session.userInfo = userInfoForSession;
-      res.cookie('jwtToken', jwtToken, {
-        httpOnly: true,
-      });
-      //res.cookie('userInfo', userInfoForCookie);
-      return res.redirect(
-        HttpStatus.OK,
-        `https://${process.env.CLIENT_DOMAIN}`,
-      );
+      return res
+        .cookie('jwtToken', jwtToken, { httpOnly: true })
+        .json(userInfoForFront);
     }
   }
 
@@ -77,11 +71,7 @@ export class UsersController {
     @Res() res,
   ) {
     const result = await this.usersService.verfiyEmail(encryptedUserId);
-    if (result)
-      return res.redirect(
-        HttpStatus.OK,
-        `http://${process.env.CLIENT_DOMAIN}/login`,
-      );
+    if (result) return res.status(200).json('email approved successfully!');
   }
 
   @Post('sendResetPasswordLink')
@@ -109,15 +99,12 @@ export class UsersController {
       httpOnly: true,
       expires: thirtyMinExpiration,
     });
-    return res.redirect(
-      HttpStatus.OK,
-      `http://${process.env.CLIENT_DOMAIN}/changePassword`,
-    );
+    return res.redirect(`http://${process.env.CLIENT_DOMAIN}/changePassword`);
   }
 
   @Post('resetPassword')
   async resetPassword(@Body() data, @Req() req, @Res() res) {
-    const encryptedUserId = req.cookies.encryptedUserId;
+    const encryptedUserId = req.cookies['encryptedUserId'];
     const newPassword = data.newPassword;
     if (!encryptedUserId)
       throw new HttpException('user id has expired!', HttpStatus.BAD_REQUEST);

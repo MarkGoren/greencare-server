@@ -19,7 +19,7 @@ export class SendgridService {
       cc: '',
       templateId: process.env.EMAIL_VERIFICATION_TEMPLATE_ID,
       dynamicTemplateData: {
-        link: `http://${process.env.SERVER_DOMAIN}/users/verifyEmail/${encryptedUserId}`,
+        link: `http://${process.env.CLIENT_DOMAIN}/login?encId=${encryptedUserId}`,
       },
     };
     return SendGrid.send(mail);
